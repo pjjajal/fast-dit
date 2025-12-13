@@ -1,0 +1,37 @@
+model:
+  token_grans: [32, 64, 96, 128, 192, 256]
+  mask_type: block # [block, causal, null]
+  encoder_config:
+    # adapter type: [patch_embed, conv]
+    adapter_type: "patch_embed"
+    # image settings
+    img_size: 32
+    in_channels: 4
+    patch_size: 2
+    # encoder settings
+    num_heads: 6
+    embed_dim: 384
+    depth: 12
+    max_latent_tokens: 1024
+    max_latent_tokens_mult: 1
+    rope_theta: 10000
+    ffn_ratio: 4.0
+    qkv_bias: true
+    proj_bias: true
+    # layers
+    act_layer: "gelu"
+    norm_layer: "layernorm"
+    ffn_layer: "mlp"
+    attn_layer: "flex"
+    # other
+    process_token_init: "learned"
+    use_embed_ffn: true
+    use_output_ffn: false
+    # regularization
+    proj_drop: 0.0
+    attn_drop: 0.0
+    head_drop: 0.0
+    # DiT specific
+    learn_sigma: true
+    class_dropout_prob: 0.1
+    num_classes: 1000
