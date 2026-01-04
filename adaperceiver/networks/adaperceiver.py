@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Literal
+from typing import Literal, NamedTuple
 
 import torch
 import torch.nn as nn
@@ -13,6 +13,9 @@ from adaperceiver.layers.block import Block
 from adaperceiver.layers.ffn import Mlp, SwiGLU
 from adaperceiver.layers.latents import ProcessLatents
 from adaperceiver.layers.rope import precompute_freqs_cis
+
+class AdaPerceiverOutput(NamedTuple):
+    preds: list[torch.Tensor]
 
 @dataclass
 class AdaPercevierConfig:

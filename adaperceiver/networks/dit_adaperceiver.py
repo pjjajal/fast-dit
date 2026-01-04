@@ -13,7 +13,7 @@ from adaperceiver.layers.latents import PatchEmbedOutputLatents
 from models import FinalLayer, LabelEmbedder, TimestepEmbedder
 from functools import partial
 
-from .adaperceiver import AdaPerceiver, AdaPercevierConfig, get_ffn_layer
+from .adaperceiver import AdaPerceiver, AdaPercevierConfig, get_ffn_layer, AdaPerceiverOutput
 
 
 @dataclass
@@ -294,4 +294,4 @@ class DiTAdaPerceiver(AdaPerceiver):
         # Append the final output to the list
         out_list.append(output)
         out_list = [self.unpatchify(out) for out in out_list]
-        return out_list
+        return AdaPerceiverOutput(preds=out_list)
