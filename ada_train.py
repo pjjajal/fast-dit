@@ -134,7 +134,8 @@ def main(args):
     if accelerator.is_main_process:
         os.makedirs(args.results_dir, exist_ok=True)  # Make results folder (holds all experiment subfolders)
         experiment_index = len(glob(f"{args.results_dir}/*"))
-        model_string_name = args.model.replace("/", "-")  # e.g., DiT-XL/2 --> DiT-XL-2 (for naming folders)
+        # model_string_name = args.model.replace("/", "-")  # e.g., DiT-XL/2 --> DiT-XL-2 (for naming folders)
+        model_string_name = args.config.split("/")[-1].replace(".yaml", "")
         experiment_dir = f"{args.results_dir}/{experiment_index:03d}-{model_string_name}"  # Create an experiment folder
         checkpoint_dir = f"{experiment_dir}/checkpoints"  # Stores saved model checkpoints
         os.makedirs(checkpoint_dir, exist_ok=True)
@@ -152,6 +153,7 @@ def main(args):
     )
     # Note that parameter initialization is done within the DiT constructor
     model = model.to(device)
+    model = torch.compile(model)
     ema = deepcopy(model).to(device)  # Create an EMA of the model for use after training
     requires_grad(ema, False)
     diffusion = create_diffusion(timestep_respacing="")  # default: 1000 steps, linear noise schedule
