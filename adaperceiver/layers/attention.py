@@ -28,10 +28,13 @@ class Attention(nn.Module):
         self.k = nn.Linear(dim, dim, bias=qkv_bias)
         self.v = nn.Linear(dim, dim, bias=qkv_bias)
 
+        head_dim = dim // num_heads
+        self.q_norm = nn.LayerNorm(head_dim, eps=1e-6, elementwise_affine=False)
+        self.k_norm = nn.LayerNorm(head_dim, eps=1e-6, elementwise_affine=False)
+
         # output projection
         self.proj = nn.Linear(dim, dim, bias=proj_bias)
         self.proj_drop = nn.Dropout(proj_drop)
-
 
     def forward(self, x, freqs_cis=None, **kwargs):
         B, N, C = x.shape
@@ -45,6 +48,9 @@ class Attention(nn.Module):
         head_dim = C // self.num_heads
         q = self.q(x).reshape(B, N, self.num_heads, head_dim)
         k = self.k(x).reshape(B, N, self.num_heads, head_dim)
+        q = self.q_norm(q).to(v.dtype)
+        k = self.k_norm(k).to(v.dtype)
+
         if freqs_cis is not None:
             q = apply_rotary_emb(q, freqs_cis)
             k = apply_rotary_emb(k, freqs_cis)
@@ -79,6 +85,9 @@ class FlexAttention(Attention):
         head_dim = C // self.num_heads
         q = self.q(x).reshape(B, N, self.num_heads, head_dim)
         k = self.k(x).reshape(B, N, self.num_heads, head_dim)
+        q = self.q_norm(q).to(v.dtype)
+        k = self.k_norm(k).to(v.dtype)
+
         if freqs_cis is not None:
             q = apply_rotary_emb(q, freqs_cis)
             k = apply_rotary_emb(k, freqs_cis)
@@ -87,7 +96,10 @@ class FlexAttention(Attention):
         k = k.transpose(1, 2)  # [B, H, N, D]
 
         out = flex_attn.flex_attention(
-            q, k, v, block_mask=mask,
+            q,
+            k,
+            v,
+            block_mask=mask,
         )
         # [B, H, N, D]
         out = out.transpose(1, 2).reshape(B, N, C)  # [B, N, D]
@@ -108,6 +120,10 @@ class CrossAttention(Attention):
         head_dim = C // self.num_heads
         q = self.q(sink).reshape(B, N, self.num_heads, head_dim)
         k = self.k(src).reshape(B, M, self.num_heads, head_dim)
+
+        q = self.q_norm(q).to(v.dtype)
+        k = self.k_norm(k).to(v.dtype)
+
         if freq_cis_q is not None:
             q = apply_rotary_emb(q, freq_cis_q)
         if freq_cis_k is not None:
@@ -118,7 +134,7 @@ class CrossAttention(Attention):
 
         # for CA we use the sink as the Q and src as KV
         out = F.scaled_dot_product_attention(
-        q, k, v, dropout_p=self.attn_drop
+            q, k, v, dropout_p=self.attn_drop
         )  # [B, H, N, D]
         # out = flex_attn.flex_attention(q, k, v, score_mod=self.score_mod)
 

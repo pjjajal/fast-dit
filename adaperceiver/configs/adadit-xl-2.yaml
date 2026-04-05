@@ -16,7 +16,7 @@ model:
     max_latent_tokens_mult: 1
     rope_theta: 10000
     ffn_ratio: 4.0
-    qkv_bias: true
+    qkv_bias: false
     proj_bias: true
     # layers
     act_layer: "gelu"

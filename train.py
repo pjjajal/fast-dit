@@ -27,6 +27,7 @@ import argparse
 import logging
 import os
 from accelerate import Accelerator
+import wandb
 
 from models import DiT_models
 from diffusion import create_diffusion
@@ -140,6 +141,8 @@ def main(args):
         os.makedirs(checkpoint_dir, exist_ok=True)
         logger = create_logger(experiment_dir)
         logger.info(f"Experiment directory created at {experiment_dir}")
+        if args.wandb:
+            wandb.init(project=args.wandb_project, name=f"{experiment_index:03d}-{model_string_name}", config=vars(args))
 
     # Create model:
     assert args.image_size % 8 == 0, "Image size must be divisible by 8 (for the VAE encoder)."
@@ -223,6 +226,8 @@ def main(args):
 
                 if accelerator.is_main_process:
                     logger.info(f"(step={train_steps:07d}) Train Loss: {avg_loss:.4f}, Train Steps/Sec: {steps_per_sec:.2f}")
+                    if args.wandb:
+                        wandb.log({"train/loss": avg_loss.item(), "train/steps_per_sec": steps_per_sec}, step=train_steps)
                 # Reset monitoring variables:
                 running_loss = 0
                 log_steps = 0
@@ -246,6 +251,8 @@ def main(args):
     
     if accelerator.is_main_process:
         logger.info("Done!")
+        if args.wandb:
+            wandb.finish()
 
 
 if __name__ == "__main__":
@@ -263,5 +270,7 @@ if __name__ == "__main__":
     parser.add_argument("--num-workers", type=int, default=4)
     parser.add_argument("--log-every", type=int, default=100)
     parser.add_argument("--ckpt-every", type=int, default=50_000)
+    parser.add_argument("--wandb", action="store_true")
+    parser.add_argument("--wandb-project", type=str, default="fast-dit")
     args = parser.parse_args()
     main(args)
